@@ -1,24 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Plus } from "lucide-react";
-import { addProduct, getProducts } from "@/services/productService";
-
-type ProductRow = {
-  id: string;
-  name: string;
-  category?: string | null;
-  cost_price: number;
-  selling_price: number;
-  min_stock: number;
-  unit?: string | null;
-  stock?: number | null;
-  current_stock?: number | null;
-};
+import { useStore } from "@/contexts/StoreContext";
 
 export default function Products() {
-  const [products, setProducts] = useState<ProductRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { products, addProduct, getProductStock, loading, error } = useStore();
   const [showForm, setShowForm] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     category: "",
@@ -28,41 +15,24 @@ export default function Products() {
     unit: "pcs",
   });
 
-  const loadProducts = async () => {
-    setLoading(true);
-    const { data, error: fetchError } = await getProducts();
-    if (fetchError) {
-      setError(fetchError.message);
-      setProducts([]);
-    } else {
-      setError(null);
-      setProducts((data || []) as ProductRow[]);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    void loadProducts();
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.costPrice || !form.sellingPrice) return;
-    const { error: insertError } = await addProduct({
-      name: form.name,
-      category: form.category || undefined,
-      cost_price: Number(form.costPrice),
-      selling_price: Number(form.sellingPrice),
-      min_stock: Number(form.minStock) || 0,
-      unit: form.unit || undefined,
-    });
-    if (insertError) {
-      setError(insertError.message);
-      return;
+    try {
+      await addProduct({
+        name: form.name,
+        category: form.category,
+        costPrice: Number(form.costPrice),
+        sellingPrice: Number(form.sellingPrice),
+        minStock: Number(form.minStock) || 0,
+        unit: form.unit || "pcs",
+      });
+      setSubmitError(null);
+      setForm({ name: "", category: "", costPrice: "", sellingPrice: "", minStock: "", unit: "pcs" });
+      setShowForm(false);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Failed to add product");
     }
-    setForm({ name: "", category: "", costPrice: "", sellingPrice: "", minStock: "", unit: "pcs" });
-    setShowForm(false);
-    await loadProducts();
   };
 
   return (
@@ -96,6 +66,7 @@ export default function Products() {
             <button type="submit" className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm neu-button active:neu-button-active">Save</button>
             <button type="button" onClick={() => setShowForm(false)} className="px-6 py-2.5 rounded-xl bg-muted text-muted-foreground font-medium text-sm neu-button active:neu-button-active">Cancel</button>
           </div>
+          {submitError && <p className="text-sm text-red-500 mt-3">{submitError}</p>}
         </form>
       )}
 
@@ -124,12 +95,12 @@ export default function Products() {
                   <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                     <td className="py-3 font-medium text-foreground">{p.name}</td>
                     <td className="py-3 text-muted-foreground">{p.category || "—"}</td>
-                    <td className="py-3 text-right text-foreground">₹{Number(p.cost_price || 0).toLocaleString()}</td>
-                    <td className="py-3 text-right text-foreground">₹{Number(p.selling_price || 0).toLocaleString()}</td>
+                    <td className="py-3 text-right text-foreground">₹{Number(p.costPrice || 0).toLocaleString()}</td>
+                    <td className="py-3 text-right text-foreground">₹{Number(p.sellingPrice || 0).toLocaleString()}</td>
                     <td className="py-3 text-right font-semibold text-foreground">
-                      {p.current_stock ?? p.stock ?? 0} {p.unit || "pcs"}
+                      {getProductStock(p.id)} {p.unit || "pcs"}
                     </td>
-                    <td className="py-3 text-right text-muted-foreground">{p.min_stock ?? 0}</td>
+                    <td className="py-3 text-right text-muted-foreground">{p.minStock ?? 0}</td>
                   </tr>
                 ))}
               </tbody>

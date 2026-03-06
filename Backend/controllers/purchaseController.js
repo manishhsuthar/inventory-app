@@ -1,8 +1,23 @@
 import { pool } from '../config/db.js';
 
+const getPurchasesColumns = async () => {
+  const result = await pool.query(
+    `SELECT column_name
+     FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'purchases'`,
+  );
+  return new Set(result.rows.map((r) => r.column_name));
+};
+
 export const getPurchases = async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM purchases ORDER BY created_at DESC');
+    const columns = await getPurchasesColumns();
+    const orderBy = columns.has('created_at')
+      ? 'created_at DESC'
+      : columns.has('date')
+        ? 'date DESC'
+        : 'id DESC';
+    const result = await pool.query(`SELECT * FROM purchases ORDER BY ${orderBy}`);
     res.json(result.rows);
   } catch (err) {
     console.error(err);

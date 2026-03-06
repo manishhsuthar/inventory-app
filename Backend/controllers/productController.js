@@ -16,6 +16,8 @@ const hasTable = async (tableName) => {
 
 export const getProducts = async (req, res) => {
   try {
+    const productColumns = await getProductsColumns();
+    const orderBy = productColumns.has('created_at') ? 'p.created_at DESC' : 'p.id DESC';
     const [purchasesExists, salesExists] = await Promise.all([
       hasTable('purchases'),
       hasTable('sales'),
@@ -31,12 +33,12 @@ export const getProducts = async (req, res) => {
               SELECT SUM(quantity)::int FROM sales WHERE product_id = p.id
             ), 0) AS current_stock
           FROM products p
-          ORDER BY p.created_at DESC`,
+          ORDER BY ${orderBy}`,
         )
       : await pool.query(
           `SELECT p.*, 0::int AS current_stock
            FROM products p
-           ORDER BY p.created_at DESC`,
+           ORDER BY ${orderBy}`,
         );
     res.json(result.rows);
   } catch (err) {
