@@ -5,6 +5,19 @@ const hasDealerPaymentsTable = async () => {
   return Boolean(result.rows[0]?.regclass);
 };
 
+const ensureDealerPaymentsTable = async () => {
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS dealer_payments (
+      id TEXT PRIMARY KEY DEFAULT 'dp_' || md5(random()::text || clock_timestamp()::text),
+      dealer_id TEXT NOT NULL,
+      amount NUMERIC NOT NULL DEFAULT 0,
+      date DATE NOT NULL DEFAULT CURRENT_DATE,
+      note TEXT DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`,
+  );
+};
+
 const getDealerPaymentsColumns = async () => {
   const result = await pool.query(
     `SELECT column_name
@@ -18,7 +31,7 @@ export const getDealerPayments = async (req, res) => {
   try {
     const tableExists = await hasDealerPaymentsTable();
     if (!tableExists) {
-      return res.json([]);
+      await ensureDealerPaymentsTable();
     }
 
     const columns = await getDealerPaymentsColumns();
@@ -39,7 +52,7 @@ export const addDealerPayment = async (req, res) => {
   try {
     const tableExists = await hasDealerPaymentsTable();
     if (!tableExists) {
-      return res.status(400).json({ error: 'dealer_payments table does not exist in database' });
+      await ensureDealerPaymentsTable();
     }
 
     const { dealer_id, amount, date, note } = req.body;
