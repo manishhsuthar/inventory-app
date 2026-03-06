@@ -1,5 +1,10 @@
 import { pool } from '../config/db.js';
 
+const hasPurchasesTable = async () => {
+  const result = await pool.query('SELECT to_regclass($1) AS regclass', ['public.purchases']);
+  return Boolean(result.rows[0]?.regclass);
+};
+
 const getPurchasesColumns = async () => {
   const result = await pool.query(
     `SELECT column_name
@@ -11,6 +16,11 @@ const getPurchasesColumns = async () => {
 
 export const getPurchases = async (req, res) => {
   try {
+    const tableExists = await hasPurchasesTable();
+    if (!tableExists) {
+      return res.json([]);
+    }
+
     const columns = await getPurchasesColumns();
     const orderBy = columns.has('created_at')
       ? 'created_at DESC'
@@ -27,13 +37,42 @@ export const getPurchases = async (req, res) => {
 
 export const addPurchase = async (req, res) => {
   try {
+    const tableExists = await hasPurchasesTable();
+    if (!tableExists) {
+      return res.status(400).json({ error: 'purchases table does not exist in database' });
+    }
+
     const { product_id, dealer_id, quantity, unit_price, date } = req.body;
     const totalAmount = Number(quantity) * Number(unit_price);
+    const columns = await getPurchasesColumns();
+
+    const data = {
+      product_id,
+      dealer_id,
+      quantity,
+      unit_price,
+      total_amount: totalAmount,
+      date,
+    };
+
+    const supported = ['product_id', 'dealer_id', 'quantity', 'unit_price', 'total_amount', 'date']
+      .filter((column) => columns.has(column));
+
+    const required = ['product_id', 'quantity'];
+    for (const col of required) {
+      if (!supported.includes(col)) {
+        return res.status(500).json({ error: `Purchases table is missing required column: ${col}` });
+      }
+    }
+
+    const placeholders = supported.map((_, i) => `$${i + 1}`).join(', ');
+    const values = supported.map((column) => data[column]);
+
     const result = await pool.query(
-      `INSERT INTO purchases (product_id, dealer_id, quantity, unit_price, total_amount, date)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO purchases (${supported.join(', ')})
+       VALUES (${placeholders})
        RETURNING *`,
-      [product_id, dealer_id, quantity, unit_price, totalAmount, date],
+      values,
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
