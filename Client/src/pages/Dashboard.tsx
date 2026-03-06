@@ -1,5 +1,5 @@
 import { useStore } from "@/contexts/StoreContext";
-import { Package, Truck, AlertTriangle, IndianRupee } from "lucide-react";
+import { Package, Truck, AlertTriangle, IndianRupee, Bell, CheckCircle2 } from "lucide-react";
 
 export default function Dashboard() {
   const { products, dealers, purchases, sales, getProductStock, getLowStockProducts, getTotalOutstandingPayments } = useStore();
@@ -10,6 +10,20 @@ export default function Dashboard() {
   const outstanding = getTotalOutstandingPayments();
   const totalSalesAmount = sales.reduce((s, sale) => s + sale.totalAmount, 0);
   const totalPurchaseAmount = purchases.reduce((s, p) => s + p.totalAmount, 0);
+  const notifications = [
+    ...(lowStock.length > 0 ? [{
+      id: "low-stock",
+      text: `${lowStock.length} product${lowStock.length > 1 ? "s are" : " is"} below minimum stock`,
+      style: "bg-destructive/10 text-destructive border-destructive/20",
+      icon: AlertTriangle,
+    }] : []),
+    ...(outstanding > 0 ? [{
+      id: "outstanding",
+      text: `Outstanding dealer payments: ₹${outstanding.toLocaleString()}`,
+      style: "bg-warning/10 text-warning border-warning/20",
+      icon: IndianRupee,
+    }] : []),
+  ];
 
   const stats = [
     { label: "Total Products", value: totalProducts, icon: Package, color: "text-primary" },
@@ -23,6 +37,28 @@ export default function Dashboard() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
         <p className="text-muted-foreground text-sm mt-1">Overview of your hardware shop</p>
+      </div>
+
+      <div className="rounded-2xl bg-card p-4 neu-raised">
+        <div className="flex items-center gap-2 mb-3">
+          <Bell className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold text-foreground">Notifications</h2>
+        </div>
+        {notifications.length === 0 ? (
+          <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2">
+            <CheckCircle2 className="h-4 w-4 text-primary" />
+            <p className="text-sm text-foreground">No active alerts. Inventory looks healthy.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {notifications.map((notice) => (
+              <div key={notice.id} className={`flex items-center gap-2 rounded-xl border px-3 py-2 ${notice.style}`}>
+                <notice.icon className="h-4 w-4 shrink-0" />
+                <p className="text-sm font-medium">{notice.text}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
