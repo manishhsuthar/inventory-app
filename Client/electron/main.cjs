@@ -9,6 +9,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
+    icon:path.join(__dirname, "../build/icons/512x512.png"),
     webPreferences: {
       sandbox: false,
       contextIsolation: true,

@@ -31,7 +31,7 @@
   ],
   "linux": {
   "target": ["AppImage","deb"],
-  "icon": "build/icon.png",
+  "icon": "build/icons",
   "category": "Utility",
   "maintainer": "Manish Suthar <sutharmanish.dev@gmail.com>"
 }
