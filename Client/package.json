@@ -1,9 +1,16 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "bn-inventory",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Inventory management software for hardware shops",
+  "homepage": "https://github.com/manishhsuthar/inventory-app.git",
+  "author":{
+    "name": "Manish Suthar",
+    "email": "sutharmanish.dev@gmail.com"
+  },
   "type": "module",
-  "main": "electron/main.cjs","scripts": {
+  "main": "electron/main.cjs",
+  "scripts": {
   "dev": "vite",
   "build": "vite build",
   "preview": "vite preview",
@@ -25,7 +32,8 @@
   "linux": {
   "target": ["AppImage","deb"],
   "icon": "build/icon.png",
-  "category": "Utility"
+  "category": "Utility",
+  "maintainer": "Manish Suthar <sutharmanish.dev@gmail.com>"
 }
 },
   "dependencies": {
